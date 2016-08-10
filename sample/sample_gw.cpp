@@ -6,7 +6,6 @@ using namespace dx9hook;
 HookHandler* dx_hooker = nullptr;
 dx9::EndScene_t endscene_og;
 HMODULE module;
-CRITICAL_SECTION critsec;
 
 
 struct Vert{
@@ -18,7 +17,6 @@ struct Vert{
 
 HRESULT WINAPI sample_EndScene(IDirect3DDevice9* device){
 
-if(TryEnterCriticalSection(&critsec)){
   Vert v[] = {
       {100.0f,100.0f,0.0f,0.0f,0xFF00FF00},
       {200.0f,100.0f,0.0f,0.0f,0xFF00FF00},
@@ -39,13 +37,6 @@ if(TryEnterCriticalSection(&critsec)){
   stateBlock->Apply();
   stateBlock->Release();
 
-  if(GetAsyncKeyState(VK_END) & 1){
-	  dx_hooker->Release();
-	  FreeLibrary(module);
-  }
-      
-  LeaveCriticalSection(&critsec);
-}
   return endscene_og(device);
 }
 
@@ -53,8 +44,6 @@ if(TryEnterCriticalSection(&critsec)){
 
 BOOL WINAPI DllMain(HMODULE hMod,DWORD dwReason,LPVOID){
   if(dwReason == DLL_PROCESS_ATTACH){
-    module = hMod;
-    InitializeCriticalSection(&critsec);
     dx_hooker = HookHandler::Create<GWDeviceFetcher>();
 
     endscene_og = dx_hooker->original<dx9::EndScene_t>(dx9::kEndScene);
